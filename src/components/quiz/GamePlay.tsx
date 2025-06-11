@@ -235,12 +235,7 @@ const GamePlay = () => {
 
           // Update player score if correct
           if (answer.is_correct) {
-            const pointsEarned = calculateScore(
-              answer.time_taken
-                ? (questions[currentQuestionIndex]?.time_limit || 30) -
-                    answer.time_taken
-                : timeLeft,
-            );
+            const pointsEarned = calculateScore(0);
             setPlayers((current) =>
               current.map((player) =>
                 player.id === answer.player_id
@@ -309,8 +304,8 @@ const GamePlay = () => {
   };
 
   const calculateScore = (secondsLeft: number) => {
-    // Base score is 1000, with bonus points for answering quickly
-    return 1000 + secondsLeft * 50;
+    // Fixed score of 100 points for every correct answer
+    return 100;
   };
 
   const startTimer = (questionIndex: number, seconds: number) => {
@@ -949,9 +944,7 @@ const GamePlay = () => {
           const correctOption = question.options.find((opt) => opt.is_correct);
 
           if (playerAnswer) {
-            const pointsEarned = playerAnswer.is_correct
-              ? 1000 + (question.time_limit - playerAnswer.time_taken) * 50
-              : 0;
+            const pointsEarned = playerAnswer.is_correct ? 100 : 0;
             csvContent += `"${player.name}",${qIndex + 1},"${question.text}","${playerAnswer.options.text}","${correctOption?.text || "N/A"}",${playerAnswer.is_correct ? "Yes" : "No"},${playerAnswer.time_taken},${pointsEarned}\n`;
           } else {
             // Player didn't answer this question
@@ -1086,6 +1079,12 @@ const GamePlay = () => {
           </Card>
 
           <div className="flex justify-center gap-4">
+            <Button
+              onClick={() => setShowSummary(true)}
+              className="bg-coral hover:bg-coral/90 gap-2 text-lg px-8 py-6 h-auto"
+            >
+              View Summary
+            </Button>
             <Button
               onClick={exportToCSV}
               className="bg-skyblue hover:bg-skyblue/90 gap-2 text-lg px-8 py-6 h-auto"
@@ -1260,11 +1259,14 @@ const GamePlay = () => {
 
               <div className="flex justify-center gap-4">
                 <Button
-                  onClick={() => setShowSummary(true)}
+                  onClick={() => {
+                    // End the quiz immediately and show final results
+                    setGameEnded(true);
+                  }}
                   variant="outline"
-                  className="bg-white hover:bg-gray-50 text-gray-900 border-gray-300 gap-2 text-lg px-8 py-6 h-auto"
+                  className="bg-red-500 hover:bg-red-600 text-white border-red-500 gap-2 text-lg px-8 py-6 h-auto"
                 >
-                  View Summary
+                  End Quiz
                 </Button>
                 <Button
                   onClick={nextQuestion}
@@ -1784,7 +1786,7 @@ const GameSummary: React.FC<GameSummaryProps> = ({
             <h2 className="text-xl font-bold">Response Time Analysis</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
+            <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
               <div className="text-2xl font-bold text-blue-600 mb-2">
                 {Math.round(
                   summaryData.questionStats.reduce(
@@ -1796,8 +1798,8 @@ const GameSummary: React.FC<GameSummaryProps> = ({
               </div>
               <div className="text-sm text-blue-700">Average Response Time</div>
             </div>
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <div className="text-2xl font-bold text-green-600 mb-2">
+            <div className="text-center p-4 bg-green-50 rounded-lg border">
+              <div className="text-xl font-bold text-green-600 mb-2">
                 {Math.round(
                   Math.min(
                     ...summaryData.questionStats.map((q) => q.averageTime),
@@ -1807,8 +1809,8 @@ const GameSummary: React.FC<GameSummaryProps> = ({
               </div>
               <div className="text-sm text-green-700">Fastest Average</div>
             </div>
-            <div className="text-center p-4 bg-red-50 rounded-lg">
-              <div className="text-2xl font-bold text-red-600 mb-2">
+            <div className="text-center p-4 bg-red-50 rounded-lg border">
+              <div className="text-xl font-bold text-red-600 mb-2">
                 {Math.round(
                   Math.max(
                     ...summaryData.questionStats.map((q) => q.averageTime),
@@ -2382,10 +2384,7 @@ const GameSummary: React.FC<GameSummaryProps> = ({
                     );
 
                     if (playerAnswer) {
-                      const pointsEarned = playerAnswer.is_correct
-                        ? 1000 +
-                          (question.time_limit - playerAnswer.time_taken) * 50
-                        : 0;
+                      const pointsEarned = playerAnswer.is_correct ? 100 : 0;
                       csvContent += `"${player.name}",${qIndex + 1},"${question.text}","${playerAnswer.options.text}","${correctOption?.text || "N/A"}",${playerAnswer.is_correct ? "Yes" : "No"},${playerAnswer.time_taken},${pointsEarned}\n`;
                     } else {
                       // Player didn't answer this question
@@ -2441,7 +2440,7 @@ const GameSummary: React.FC<GameSummaryProps> = ({
                 toast({
                   title: "Export successful",
                   description:
-                    "Comprehensive quiz results have been exported to CSV",
+                    "Comprehensive quiz results have been exported to Excel",
                 });
               } catch (error: any) {
                 toast({
@@ -2452,22 +2451,81 @@ const GameSummary: React.FC<GameSummaryProps> = ({
                 });
               }
             }}
-            className="bg-skyblue hover:bg-skyblue/90 gap-2 text-lg px-8 py-6 h-auto"
+            className="bg-green-600 hover:bg-green-700 gap-2 text-lg px-8 py-6 h-auto"
           >
-            Export Results
+            Export to Excel
           </Button>
           <Button
-            onClick={onShowFinalResults}
-            className="bg-coral hover:bg-coral/90 gap-2 text-lg px-8 py-6 h-auto"
+            onClick={async () => {
+              try {
+                const printWindow = window.open("", "_blank");
+                if (printWindow) {
+                  // Get the entire HTML content of the current document
+                  const fullHtml = document.documentElement.outerHTML;
+
+                  // Get all computed styles and inject them into the new window
+                  let styleHtml = "";
+                  for (const styleSheet of document.styleSheets) {
+                    try {
+                      if (styleSheet.cssRules) {
+                        for (const cssRule of styleSheet.cssRules) {
+                          styleHtml += cssRule.cssText;
+                        }
+                      }
+                    } catch (e) {
+                      console.warn(
+                        "Could not read stylesheet rules (might be cross-origin):",
+                        e,
+                      );
+                    }
+                  }
+
+                  printWindow.document.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                      <title>Game Play Summary</title>
+                      <style>
+                        body { margin: 0; font-family: sans-serif; }
+                        /* Include all existing styles for accurate representation */
+                        ${styleHtml}
+                        @media print {
+                          body { margin: 0; }
+                          /* Add any specific print styles here if needed */
+                        }
+                      </style>
+                    </head>
+                    <body>
+                      ${fullHtml}
+                    </body>
+                    </html>
+                  `);
+                  printWindow.document.close();
+
+                  setTimeout(() => {
+                    printWindow.print();
+                    printWindow.close();
+                  }, 500);
+                }
+
+                toast({
+                  title: "PDF Export",
+                  description:
+                    "Print dialog opened. Please save as PDF from the print options.",
+                });
+              } catch (error: any) {
+                toast({
+                  title: "PDF Export failed",
+                  description:
+                    error.message ||
+                    "Something went wrong while generating PDF",
+                  variant: "destructive",
+                });
+              }
+            }}
+            className="bg-red-600 hover:bg-red-700 gap-2 text-lg px-8 py-6 h-auto"
           >
-            View Final Leaderboard
-          </Button>
-          <Button
-            onClick={onBackToDashboard}
-            variant="outline"
-            className="gap-2 text-lg px-8 py-6 h-auto"
-          >
-            Back to Dashboard
+            Export to PDF
           </Button>
         </div>
       </div>

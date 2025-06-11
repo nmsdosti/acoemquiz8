@@ -133,15 +133,6 @@ const GameLobby = () => {
   };
 
   const startGame = async () => {
-    if (players.length === 0) {
-      toast({
-        title: "No players",
-        description: "Wait for players to join before starting",
-        variant: "destructive",
-      });
-      return;
-    }
-
     try {
       // Update the game session status to active
       const { error } = await supabase
@@ -250,8 +241,7 @@ const GameLobby = () => {
 
                 <Button
                   onClick={startGame}
-                  disabled={players.length === 0}
-                  className="w-full bg-navy hover:bg-navy/90 gap-2 py-6 h-auto disabled:opacity-50"
+                  className="w-full bg-navy hover:bg-navy/90 gap-2 py-6 h-auto"
                 >
                   <Play className="h-5 w-5" />
                   Start Game
