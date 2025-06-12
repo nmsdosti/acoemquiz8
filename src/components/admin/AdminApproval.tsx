@@ -6,6 +6,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { CheckCircle, XCircle, Clock, Users } from "lucide-react";
 import { useAuth } from "@/components/auth/VercelAuthProvider";
 import { Navigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import UserMenu from "@/components/ui/user-menu";
 
 interface PendingUser {
   id: string;
@@ -93,8 +95,18 @@ export default function AdminApproval() {
   const approvedCount = pendingUsers.filter((user) => user.is_approved).length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-600 via-blue-600 to-teal-500 p-4">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-[#FF6952] to-teal-500 p-4">
+      <div className="w-full bg-white flex justify-between items-center px-6 py-4 shadow-md fixed top-0 left-0 right-0 z-50">
+        <Link to="/">
+          <img
+            src="https://fixturlaser.com/wp-content/uploads/2021/05/ACOEM-LOGO-WithoutBaseline-CMYK-Bicolor.png"
+            alt="ACOEM Logo"
+            className="h-12 w-auto ml-16"
+          />
+        </Link>
+        <UserMenu />
+      </div>
+      <div className="max-w-6xl mt-24 mx-auto">
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-white mb-2">
             Admin Dashboard
